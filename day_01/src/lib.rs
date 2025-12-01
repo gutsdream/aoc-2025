@@ -10,16 +10,18 @@ pub struct Rotation {
     distance: i32,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Direction {
     Left,
     Right,
 }
 
+#[derive(Clone)]
 pub struct Dial {
     position: i32,
     floor: i32,
     ceiling: i32,
+    clicks: i32,
 }
 
 impl Dial {
@@ -29,25 +31,62 @@ impl Dial {
             Direction::Right => self.position + rotation.distance,
         };
 
-        Dial {
-            position: self.correct_position(position),
-            floor: self.floor,
-            ceiling: self.ceiling,
+        let ignore_one_click = self.position == self.floor && rotation.direction == Direction::Left;
+
+        let dial = Dial {
+            position,
+            ..self.clone()
+        };
+
+        let dial = Dial::correct_position(dial);
+
+        if ignore_one_click {
+            return Dial {
+                clicks: dial.clicks - 1,
+                ..dial
+            };
         }
+
+        dial
     }
 
-    fn correct_position(&self, position: i32) -> i32 {
-        if position < self.floor {
-            let corrected = position + (self.ceiling + 1);
-            return self.correct_position(corrected);
+    fn correct_position(dial: Dial) -> Dial {
+        if dial.position < dial.floor {
+            let corrected = dial.position + (dial.ceiling + 1);
+            let dial = Dial {
+                position: corrected,
+                clicks: dial.clicks + 1,
+                ..dial
+            };
+            return Dial::correct_position(dial);
+            // 
+            // if (dial.position == dial.floor) {
+            //     return dial;
+            // }
+            // return Dial::correct_position(dial);
         }
 
-        if position > self.ceiling {
-            let corrected = position - (self.ceiling + 1);
-            return self.correct_position(corrected);
+        if dial.position > dial.ceiling {
+            let corrected = dial.position - (dial.ceiling + 1);
+            let dial = Dial {
+                position: corrected,
+                clicks: dial.clicks + 1,
+                ..dial
+            };
+            if (dial.position == dial.floor) {
+                return dial;
+            }
+            return Dial::correct_position(dial);
         }
 
-        position
+        if dial.position == dial.floor {
+            return Dial {
+                clicks: dial.clicks + 1,
+                ..dial
+            };
+        }
+
+        dial
     }
 }
 
@@ -57,6 +96,7 @@ impl Default for Dial {
             position: 50,
             floor: 0,
             ceiling: 99,
+            clicks: 0,
         }
     }
 }
@@ -110,8 +150,14 @@ impl Puzzle {
         count
     }
 
-    pub fn part_2(&self) -> u32 {
-        1
+    pub fn part_2(&self) -> i32 {
+        let default_dial = Dial::default();
+        let dial = self
+            .rotations
+            .iter()
+            .fold(default_dial, |dial, rotation| dial.apply(rotation));
+
+        dial.clicks
     }
 }
 
@@ -150,6 +196,6 @@ L82";
         let sum = puzzle.part_2();
 
         // Then
-        assert_eq!(0, sum);
+        assert_eq!(6, sum);
     }
 }
