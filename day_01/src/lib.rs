@@ -59,7 +59,7 @@ impl Dial {
                 ..dial
             };
             return Dial::correct_position(dial);
-            // 
+            //
             // if (dial.position == dial.floor) {
             //     return dial;
             // }
@@ -73,7 +73,7 @@ impl Dial {
                 clicks: dial.clicks + 1,
                 ..dial
             };
-            if (dial.position == dial.floor) {
+            if dial.position == dial.floor {
                 return dial;
             }
             return Dial::correct_position(dial);
